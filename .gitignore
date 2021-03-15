@@ -1,0 +1,20 @@
+# CLion generated files
+**/.idea/*
+
+# vscode generated files
+.vscode
+
+# Compiled source
+*.a
+*.so
+*.so.*
+*.o
+*.lo
+*.tar.gz
+*.log
+.coverage
+*.pyc
+*.log
+
+.DS_Store
+*.swp

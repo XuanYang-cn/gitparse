@@ -1,5 +1,6 @@
 import os
 import shutil
+import datetime
 
 from const import REPO_DIR, NEW_REPO_DIR
 
@@ -157,24 +158,16 @@ def list_files_in_commit(repo, commit):
 
 
 def apply_commit(repo, src_commit):
-    # author_date = str(src_commit.authored_datetime)
-    # author_date = str(src_commit.authored_date)
-
-    # commit_date = src_commit.committed_datetime
     author_name = src_commit.real_author_name
     author_email = src_commit.real_author_email
-    msg = src_commit.message
-    import datetime
-    # author_date_str = datetime.utcfromtimestamp(src_commit.authored_datetime).strftime('%Y-%m-%d %H:%M:%S')
-    # print(dir(src_commit.authored_datetime))
-    # author_date_str = str(src_commit.authored_datetime)
     author_date_str = src_commit.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
-    #
+
     os.environ["GIT_AUTHOR_DATE"] = author_date_str
     os.environ["GIT_COMMITTER_DATE"] = author_date_str
     set_user_and_email(repo, author_name, author_email)
 
     repo.git.add(".")
+    msg = src_commit.message
     repo.index.commit(msg)
 
 
@@ -214,18 +207,18 @@ def describe_commits(commits):
         if c.is_mainline:
             pass
 
-    print("mainline cnt:", cnt1)
-    print("sublint cnt:", cnt2)
-    print("solved cnt:", cnt3)
-    print("useful cnt:", cnt4)
-
-    print("Useful:")
-    for x, y in useful_map.items():
-        print("%s:%d"%(x, y))
-
-    print("Not Useful")
-    for x, y in notuseful_map.items():
-        print("%s:%d"%(x, y))
+    # print("mainline cnt:", cnt1)
+    # print("sublint cnt:", cnt2)
+    # print("solved cnt:", cnt3)
+    # print("useful cnt:", cnt4)
+    # 
+    # print("Useful:")
+    # for x, y in useful_map.items():
+    #     print("%s:%d"%(x, y))
+    # 
+    # print("Not Useful")
+    # for x, y in notuseful_map.items():
+    #     print("%s:%d"%(x, y))
 
 
 def copy_dir(src, dst):
@@ -311,21 +304,12 @@ def remove_all_tracked_files(repo, repo_dir, branch):
 
 
 def check_mainline(commits, commit_map):
-    need_prints = ("b3a6d451aaaa0462173aaa8f90e3080908f2e13e", "88854e29860c0d3f178ce237a2944f1da95eeff8",)
     old_cnt = 1
     cnt = 0
     while(old_cnt != cnt):
         old_cnt = cnt
         for c in reversed(commits):
-            need_print = c.commit_id in need_prints
-            if need_print:
-                print("??:", c.commit_id)
-                print("!!:", c.mainline_checked)
             if c.mainline_checked:
-                if need_print:
-                    print("L:",c.left_parent_id)
-                    print("R:", c.right_parent_id)
-
                 left_parent_id = c.left_parent_id
                 lp = commit_map.get(left_parent_id, None)
                 if lp and c.is_mainline:
@@ -362,10 +346,7 @@ def copy_files(files, srcDir, dstDir):
         elif os.path.isdir(file_path):
             copy_dir(file_path, dstDir)
 
-
 def save_mainline_msg(commits):
-    # all_lines = []
-    # f2 = open("/home/czs/msg.txt", mode='w')
     author_msgs = {}
 
     for c in commits:
@@ -377,17 +358,8 @@ def save_mainline_msg(commits):
                 author_msgs[real_author_name] = []
 
             author_msgs[real_author_name].append(line)
-            # line = "%s %s %s\n" % (c.real_author_name, c.summary, c.is_mainline)
-
-            # all_lines.append(line)
-        # if c.commit_id in("b3a6d451aaaa0462173aaa8f90e3080908f2e13e", "88854e29860c0d3f178ce237a2944f1da95eeff8"):
-        #     print("me:", c.commit_id, "\n")
-        #     print("parents:", c.left_parent_id, " ", c.right_parent_id, "\n")
 
     for author, lines in author_msgs.items():
         fname = "/home/czs/author_msgs/%s_msg.txt"%author
         f = open(fname, mode='w')
         f.writelines(lines)
-
-
-    # f2.writelines(all_lines)

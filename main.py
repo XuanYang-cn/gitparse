@@ -1,6 +1,6 @@
 import git
 
-from util import *
+from commit import *
 from const import *
 from name_maps import *
 
@@ -16,6 +16,7 @@ EMAIL_SET = set()
 AUTHOR_COMMIT_CNT = {}
 AUTHOR_EMAIL_COMMIT_CNT = {}
 NAME_EMAIL_MAP = {}
+
 
 def init_func(max_commit_cnt=-1):
     global ALL_APPLY_COMMITS

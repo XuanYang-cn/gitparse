@@ -351,7 +351,7 @@ def copy_files(files, srcDir, dstDir):
 def save_mainline_msg(commits):
     author_msgs = {}
     titles = ["Date", "CommitUrl", "Message"]
-    widths = [0, 0, 0]
+    widths = [0, 0]
     for c in commits:
         if c.useful:
             real_author_name = c.real_author_name
@@ -362,7 +362,7 @@ def save_mainline_msg(commits):
 
             widths[0] = len(author_date_str)
             widths[1] = len(c.commit_id)
-            widths[2] = max(widths[2], get_string_width(c.message))
+            # widths[2] = max(widths[2], get_string_width(c.message))
 
             if real_author_name not in author_msgs:
                 author_msgs[real_author_name] = { key:[] for key in titles }

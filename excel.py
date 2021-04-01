@@ -32,15 +32,17 @@ def create_table_for_author(file_name, content, column_widths=None):
         for i, width in enumerate(column_widths):
             worksheet.set_column(i, i, width)
 
-    # Make the columns wider for clarity.
-    # if max_col > 1:
-    #     worksheet.set_column(0, max_col - 2, 30)
-    #     worksheet.set_column(max_col - 1, max_col - 1, column_width)
-    # else:
-    #     worksheet.set_column(0, max_col - 1, column_width)
-
-    # worksheet.set_default_row(row_height)
-    # print(dir(worksheet))
-    # worksheet.fit_page()
-    # Close the Pandas Excel writer and output the Excel file.
     writer.save()
+
+def read_excel_file(fname):
+    import pandas as pd
+    xl = pd.ExcelFile(fname)
+    xl.sheet_names
+
+    df = xl.parse("Sheet1")
+    return df
+
+if __name__ == "__main__":
+    fname = "/home/czs/author_msgs/'zhenshan.cao'.xlsx"
+    df = read_excel_file(fname)
+    print(df)

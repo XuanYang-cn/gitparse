@@ -228,7 +228,7 @@ def copy_dir(src, dst):
     src_name = os.path.basename(src)
     target_dir = os.path.join(dst, src_name)
 
-    if os.path.islink(target_dir):
+    if os.path.islink(src):
         os.symlink(src, target_dir)
         return
 
@@ -241,7 +241,7 @@ def copy_dir(src, dst):
         fn = os.path.join(src, eachfile)
         islink = os.path.islink(fn)
         isdir = os.path.isdir(fn)
-        if isdir and not islink:
+        if isdir:
             copy_dir(fn, target_dir)
         else:
             shutil.copy(fn, target_dir, follow_symlinks=islink)

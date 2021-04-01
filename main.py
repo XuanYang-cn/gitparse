@@ -83,5 +83,8 @@ if __name__ == "__main__":
     MyCommit.REPLICA_NAME_MAP = REPLICA_NAME_MAP
     simplify(ALL_APPLY_COMMITS, COMMIT_MAP)
     describe_commits(ALL_APPLY_COMMITS)
-    save_mainline_msg(ALL_APPLY_COMMITS)
+    save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: c.useful and not c.is_mainline)
+
+    # save_mainline_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
+    # save_useful_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
     # process()

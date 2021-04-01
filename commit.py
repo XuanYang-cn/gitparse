@@ -3,7 +3,6 @@ import shutil
 
 from const import REPO_DIR, NEW_REPO_DIR
 from excel import create_table_for_author
-from util import get_string_width
 
 class MyCommit:
     REPLICA_NAME_MAP = {}
@@ -17,15 +16,15 @@ class MyCommit:
         self.mainline_checked = False
         self.useful = True
 
-    def judge_by_child(self, src_commit):
+    def judge_by_child(self, child_commit):
 
         if self._is_mainline:
             return
 
-        if self.real_author_name == src_commit.real_author_name:
+        if self.real_author_name == child_commit.real_author_name:
             self.useful = False
 
-        self._solved = self._solved or src_commit.left_parent_id == self.commit_id or src_commit.right_parent_id == self.commit_id
+        self._solved = self._solved or child_commit.left_parent_id == self.commit_id or child_commit.right_parent_id == self.commit_id
 
     @property
     def is_mainline(self):
@@ -207,10 +206,10 @@ def describe_commits(commits):
         if c.is_mainline:
             pass
 
-    # print("mainline cnt:", cnt1)
-    # print("sublint cnt:", cnt2)
-    # print("solved cnt:", cnt3)
-    # print("useful cnt:", cnt4)
+    print("mainline cnt:", cnt1)
+    print("subline cnt:", cnt2)
+    print("solved cnt:", cnt3)
+    print("useful cnt:", cnt4)
     # 
     # print("Useful:")
     # for x, y in useful_map.items():
@@ -348,30 +347,35 @@ def copy_files(files, srcDir, dstDir):
             copy_dir(file_path, dstDir)
 
 
-def save_mainline_msg(commits):
+def save_commit_msg_by_author(target_dir, commits, checkFunc):
     author_msgs = {}
     titles = ["Date", "CommitUrl", "Message"]
     widths = [0, 0]
     for c in commits:
-        if c.useful:
+        if checkFunc(c):
             real_author_name = c.real_author_name
             author_date_str = c.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
             url = "https://github.com/zilliztech/milvus-distributed/commit/" + c.commit_id
-            hyperlink = '=HYPERLINK(\"%s\", \"%s\")'%(url, c.commit_id)
+            hyperlink = '=HYPERLINK(\"%s\", \"%s\")' % (url, c.commit_id)
             values = [author_date_str, hyperlink, c.message]
 
             widths[0] = len(author_date_str)
             widths[1] = len(c.commit_id)
-            # widths[2] = max(widths[2], get_string_width(c.message))
 
             if real_author_name not in author_msgs:
-                author_msgs[real_author_name] = { key:[] for key in titles }
+                author_msgs[real_author_name] = {key: [] for key in titles}
 
             for i, key in enumerate(titles):
                 author_msgs[real_author_name][key].append(values[i])
 
     for author, content in author_msgs.items():
-        fname = "/home/czs/author_msgs/%s" % repr(author)
+        fname = "%s/%s" % (target_dir, repr(author))
         create_table_for_author(fname, content, widths)
-        # f = open(fname, mode='w')
-        # f.writelines(lines)
+
+def save_mainline_msg(target_dir, commits):
+    checkFunc = lambda c: c.is_mainline
+    save_commit_msg_by_author(target_dir, commits, checkFunc)
+
+def save_useful_msg(target_dir, commits):
+    checkFunc = lambda c: c.useful
+    save_commit_msg_by_author(target_dir, commits, checkFunc)

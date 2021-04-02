@@ -27,6 +27,10 @@ class MyCommit:
         self._solved = self._solved or child_commit.left_parent_id == self.commit_id or child_commit.right_parent_id == self.commit_id
 
     @property
+    def is_orphan(self):
+        return self.left_parent_id is None and self.right_parent_id is None
+
+    @property
     def is_mainline(self):
         return self._is_mainline
 
@@ -349,18 +353,21 @@ def copy_files(files, srcDir, dstDir):
 
 def save_commit_msg_by_author(target_dir, commits, checkFunc):
     author_msgs = {}
-    titles = ["Date", "CommitUrl", "Message"]
-    widths = [0, 0]
+    titles = ["Date", "CommitUrl", "Keep", "Message"]
+    widths = [0, 0, 0]
+
     for c in commits:
         if checkFunc(c):
             real_author_name = c.real_author_name
             author_date_str = c.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
             url = "https://github.com/zilliztech/milvus-distributed/commit/" + c.commit_id
             hyperlink = '=HYPERLINK(\"%s\", \"%s\")' % (url, c.commit_id)
-            values = [author_date_str, hyperlink, c.message]
+            keep = 1 if c.useful else None
+            values = [author_date_str, hyperlink, keep, c.message]
 
             widths[0] = len(author_date_str)
             widths[1] = len(c.commit_id)
+            widths[2] = 6
 
             if real_author_name not in author_msgs:
                 author_msgs[real_author_name] = {key: [] for key in titles}

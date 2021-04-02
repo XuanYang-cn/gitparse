@@ -4,6 +4,7 @@ from commit import *
 from const import *
 from name_maps import *
 
+
 REPO = git.Repo(REPO_DIR)
 NEW_REPO = git.Repo(NEW_REPO_DIR)
 
@@ -83,7 +84,9 @@ if __name__ == "__main__":
     MyCommit.REPLICA_NAME_MAP = REPLICA_NAME_MAP
     simplify(ALL_APPLY_COMMITS, COMMIT_MAP)
     describe_commits(ALL_APPLY_COMMITS)
-    save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: c.useful and not c.is_mainline)
+    # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: c.useful and not c.is_mainline)
+    save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
+    # save_commit_msg_by_author("/home/czs/author_orphans", ALL_APPLY_COMMITS, lambda c: c.is_orphan)
 
     # save_mainline_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
     # save_useful_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)

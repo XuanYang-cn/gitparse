@@ -215,13 +215,13 @@ def describe_commits(commits):
     print("solved cnt:", cnt3)
     print("useful cnt:", cnt4)
     # 
-    # print("Useful:")
-    # for x, y in useful_map.items():
-    #     print("%s:%d"%(x, y))
-    # 
-    # print("Not Useful")
-    # for x, y in notuseful_map.items():
-    #     print("%s:%d"%(x, y))
+    print("Useful:")
+    for x, y in useful_map.items():
+        print("%s:%d"%(x, y))
+
+    print("Not Useful")
+    for x, y in notuseful_map.items():
+        print("%s:%d"%(x, y))
 
 
 def copy_dir(src, dst):

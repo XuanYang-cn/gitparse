@@ -3,6 +3,7 @@ import git
 from commit import *
 from const import *
 from name_maps import *
+from util import progress_bar_output
 
 
 REPO = git.Repo(REPO_DIR)
@@ -22,8 +23,10 @@ NAME_EMAIL_MAP = {}
 def init_func(max_commit_cnt=-1):
     global ALL_APPLY_COMMITS
     global COMMIT_MAP
+    global LAST_COMMIT
     checkout_branch(REPO, REPO_BRANCH)
     merge_branch(REPO, REPO_BACKUP_BRANCH)
+    LAST_COMMIT = REPO.head.commit.hexsha
     reset_to_rev(REPO, LAST_COMMIT)
     clean_repo(REPO)
 
@@ -37,17 +40,19 @@ def init_func(max_commit_cnt=-1):
     clean_repo(REPO)
 
 
-def process():
+def process(checkFunc):
+    print("Start process!\n")
+
     all_cnt = len(ALL_APPLY_COMMITS)
-    i = 0
-    for commit in ALL_APPLY_COMMITS:
-        i += 1
-        if i == 1:
+    for i, commit in enumerate(ALL_APPLY_COMMITS, 1):
+        if commit.is_orphan:
             continue
-        if not commit.useful:
+        if not checkFunc(commit):
             continue
-        print("Do: %d/%d\n" % (i, all_cnt))
         copy_commit(REPO, NEW_REPO, commit)
+        progress_bar_output(i, all_cnt)
+
+    print("\nProcess done!\n")
 
 
 def copy_commit(repo, new_repo, commit):
@@ -74,20 +79,21 @@ def collect_name_and_email(commits):
         AUTHOR_COMMIT_CNT[real_name] = AUTHOR_COMMIT_CNT.get(real_name, 0) + 1
         AUTHOR_EMAIL_COMMIT_CNT[real_email] = AUTHOR_EMAIL_COMMIT_CNT.get(real_email, 0) + 1
 
-
 if __name__ == "__main__":
     init_func(-1)
-    ALL_APPLY_COMMITS[-1].is_mainline = True
-    check_mainline(ALL_APPLY_COMMITS, COMMIT_MAP)
-    collect_name_and_email(ALL_APPLY_COMMITS)
-    MyCommit.NAME_EMAIL_MAP = NAME_EMAIL_MAP
-    MyCommit.REPLICA_NAME_MAP = REPLICA_NAME_MAP
-    simplify(ALL_APPLY_COMMITS, COMMIT_MAP)
-    describe_commits(ALL_APPLY_COMMITS)
+    if 1:
+        ALL_APPLY_COMMITS[-1].is_mainline = True
+        check_mainline(ALL_APPLY_COMMITS, COMMIT_MAP)
+        collect_name_and_email(ALL_APPLY_COMMITS)
+        MyCommit.NAME_EMAIL_MAP = NAME_EMAIL_MAP
+        MyCommit.REPLICA_NAME_MAP = REPLICA_NAME_MAP
+        simplify(ALL_APPLY_COMMITS, COMMIT_MAP)
+        describe_commits(ALL_APPLY_COMMITS)
+
     # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: c.useful and not c.is_mainline)
-    save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
+    # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
     # save_commit_msg_by_author("/home/czs/author_orphans", ALL_APPLY_COMMITS, lambda c: c.is_orphan)
 
     # save_mainline_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
     # save_useful_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
-    # process()
+    process(lambda c: c.is_mainline)

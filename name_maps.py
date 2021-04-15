@@ -26,7 +26,7 @@ REPLICA_NAME_MAP = {
 
     'op-hunter': 'ophunter233',
 
-    'Wang Xiangyu': 'Wang Xiangyu',
+    'Wang Xiangyu': 'Xiangyu Wang',
 
     'neza2017': 'neza2017',
 

@@ -50,7 +50,7 @@ REPLICA_NAME_MAP = {
 
     'bigsheeper': 'bigsheeper',
 
-    'Xiangyu Wang': 'Wang Xiangyu',
+    'Xiangyu Wang': 'Xiangyu Wang',
 
     'usrname': 'cai.zhang',
 
@@ -103,6 +103,7 @@ REPLICA_EMAIL_MAP = {
     'rt.guo@outlook.com': 'rentong.guo@zilliz.com',
     'xige2016@gmail.com': 'xi.ge@zilliz.com',
     'cydrain@gmail.com': 'yudong.cai@zilliz.com',
+    'yudong.cai@zilliz.com': 'yudong.cai@zilliz.com',
     'fluorinedog@gmail.com': 'guilin.gou@zilliz.com',
     '2363080731@qq.com': 'cai.zhang@zilliz.com',
     '954206947@qq.com': 'yihao.dai@zilliz.com',

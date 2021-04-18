@@ -1,4 +1,8 @@
 import sys
+import glob
+import os
+
+from excel import read_excel_file
 
 def get_string_width(multi_string):
     lines = multi_string.split("\n")
@@ -19,3 +23,42 @@ def progress_bar_output(i, total):
     sys.stdout.write("[%-100s] %d%%" % ('=' * i, i))
     sys.stdout.flush()
 
+
+def load_commit_message_map(dir_path):
+    """
+    load all excel files and construct map of commit to new message
+    :param dir_path: absolute director path which contain excel files
+    :return: dict
+    """
+    ret = {}
+    cnt_map = {}
+
+    suffix = ".xlsx"
+    all_paths = set(glob.glob("%s/*%s"%(dir_path, suffix)))
+
+    for f in all_paths:
+        df = read_excel_file(f)
+        df = df[~df['Keep'].isnull()]
+        cnt = 0
+        for _, row in df.iterrows():
+            commitID = row['CommitUrl']
+            assert isinstance(commitID, str)
+            assert row['Keep'] == 1
+            msg = row['Message'].strip()
+            cnt += 1
+            assert commitID not in ret
+            ret[commitID] = msg
+        name = os.path.basename(f[0:-len(suffix)])
+        cnt_map[name] = cnt
+
+    # for x, y in ret.items():
+    #     print(x, " ", y + "\n")
+    # print(ret)
+    print("In load commit msg start:\n")
+    print("==================\n")
+    for name, cnt in cnt_map.items():
+        print("\t%s:%d\n"%(name, cnt))
+
+    print("==================\n")
+    print("In load commit msg end.\n")
+    return ret

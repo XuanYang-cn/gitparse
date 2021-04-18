@@ -34,15 +34,8 @@ def create_table_for_author(file_name, content, column_widths=None):
 
     writer.save()
 
-def read_excel_file(fname):
+def read_excel_file(fname, sheet_name = "Sheet1"):
     import pandas as pd
     xl = pd.ExcelFile(fname)
-    xl.sheet_names
-
-    df = xl.parse("Sheet1")
+    df = xl.parse(sheet_name)
     return df
-
-if __name__ == "__main__":
-    fname = "/home/czs/author_msgs/'zhenshan.cao'.xlsx"
-    df = read_excel_file(fname)
-    print(df)

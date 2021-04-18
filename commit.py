@@ -15,6 +15,7 @@ class MyCommit:
         self._order = order
         self.mainline_checked = False
         self.useful = True
+        self._new_msg = ""
 
     def judge_by_child(self, child_commit):
 
@@ -119,6 +120,16 @@ class MyCommit:
         return self._commit.message
 
     @property
+    def new_message(self):
+        if self._new_msg:
+            return self._new_msg
+        return self.message
+
+    @new_message.setter
+    def new_message(self, msg):
+        self._new_msg = msg
+
+    @property
     def summary(self):
         return self._commit.summary
 
@@ -154,6 +165,14 @@ def reset_to_commit(repo, commit):
     reset_to_rev(repo, commit.commit_id)
 
 
+def del_branch_local(repo, branch):
+    try:
+        repo.git.execute(
+            ['git', 'branch', '--d', branch])
+    except:
+        pass
+
+
 def list_files_in_commit(repo, commit):
     files = repo.git.execute(
         ['git', 'ls-tree', '--name-only', commit.commit_id]).split()
@@ -170,12 +189,23 @@ def apply_commit(repo, src_commit):
     set_user_and_email(repo, author_name, author_email)
 
     repo.git.add(".")
-    msg = src_commit.message
+    msg = src_commit.new_message
     repo.index.commit(msg)
 
 
-def checkout_branch(repo, branch):
-    repo.git.checkout(branch)
+def checkout_branch(repo, branch, create_new=False):
+    does_exist = True
+    try:
+        repo.git.checkout(branch)
+    except:
+        does_exist = False
+
+    if not does_exist:
+        if not create_new:
+            raise Exception('{branch} not existed'.format(branch=repr(branch)))
+        else:
+            repo.git.checkout('-b', branch)
+
 
 
 def merge_branch(repo, branch):
@@ -214,14 +244,15 @@ def describe_commits(commits):
     print("subline cnt:", cnt2)
     print("solved cnt:", cnt3)
     print("useful cnt:", cnt4)
-    # 
-    print("Useful:")
-    for x, y in useful_map.items():
-        print("%s:%d"%(x, y))
 
-    print("Not Useful")
-    for x, y in notuseful_map.items():
-        print("%s:%d"%(x, y))
+    if 0:
+        print("Useful:")
+        for x, y in useful_map.items():
+            print("%s:%d"%(x, y))
+
+        print("Not Useful")
+        for x, y in notuseful_map.items():
+            print("%s:%d"%(x, y))
 
 
 def copy_dir(src, dst):

@@ -35,21 +35,29 @@ def load_commit_message_map(dir_path):
 
     suffix = ".xlsx"
     all_paths = set(glob.glob("%s/*%s"%(dir_path, suffix)))
-
+    total_cnt = 0
+    total_cnt2 = 0
     for f in all_paths:
         df = read_excel_file(f)
-        df = df[~df['Keep'].isnull()]
+        # df = df[~df['Keep'].isnull()]
         cnt = 0
         for _, row in df.iterrows():
             commitID = row['CommitUrl']
             assert isinstance(commitID, str)
-            assert row['Keep'] == 1
-            msg = row['Message'].strip()
+
+            if row['Keep'] != 1:
+                ret[commitID] = ""
+                total_cnt2 += 1
+                continue
+
             cnt += 1
+            total_cnt2 += 1
+            msg = row['Message'].strip()
             assert commitID not in ret
             ret[commitID] = msg
         name = os.path.basename(f[0:-len(suffix)])
         cnt_map[name] = cnt
+        total_cnt += cnt
 
     # for x, y in ret.items():
     #     print(x, " ", y + "\n")
@@ -58,6 +66,8 @@ def load_commit_message_map(dir_path):
     print("==================\n")
     for name, cnt in cnt_map.items():
         print("\t%s:%d\n"%(name, cnt))
+    print("total cnt:", total_cnt)
+    print("total cnt2:", total_cnt2)
 
     print("==================\n")
     print("In load commit msg end.\n")

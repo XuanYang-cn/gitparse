@@ -15,7 +15,7 @@ class MyCommit:
         self._order = order
         self.mainline_checked = False
         self.useful = True
-        self._new_msg = ""
+        self._new_msg = None
 
     def judge_by_child(self, child_commit):
 
@@ -121,9 +121,9 @@ class MyCommit:
 
     @property
     def new_message(self):
-        if self._new_msg:
-            return self._new_msg
-        return self.message
+        if self._new_msg is None:
+            return self.message
+        return self._new_msg
 
     @new_message.setter
     def new_message(self, msg):

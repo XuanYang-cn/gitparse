@@ -21,6 +21,7 @@ NAME_EMAIL_MAP = {}
 
 COMMIT_MSG_MAP = {}
 
+
 def init_func(max_commit_cnt=-1):
     global ALL_APPLY_COMMITS
     global COMMIT_MAP
@@ -45,38 +46,40 @@ def init_func(max_commit_cnt=-1):
     clean_repo(REPO)
 
 
-def process(checkFunc):
+def process():
     print("Start process!\n")
-    msg_replace_cnt = 0
-    abandon_cnt = 0
     all_cnt = len(ALL_APPLY_COMMITS)
+    in_map_cnt = 0
+    in_map_abandon_cnt = 0
+    not_in_map_abandon_cnt = 0
 
     for i, commit in enumerate(ALL_APPLY_COMMITS, 1):
-        need_print = commit.commit_id == '8c4a905ce247333b5950bd2f03cf103e34533db8'
         if commit.is_orphan:
             continue
-        if not checkFunc(commit):
-            continue
-        if need_print:
-            print("CCCC1", commit.commit_id in COMMIT_MSG_MAP)
-        if commit.commit_id in COMMIT_MSG_MAP:
-            new_msg =  COMMIT_MSG_MAP[commit.commit_id]
-            commit.new_message = new_msg
-            msg_replace_cnt += 1
-        if need_print:
-            print("CCCC2:$%s$"%commit.new_message)
-            print("CCCC3:$%s$"%COMMIT_MSG_MAP[commit.commit_id])
-        # anbandon by manually
-        if commit.new_message == "":
-            abandon_cnt += 1
-            continue
-        # if need_print:
-        #     break
-        # copy_commit(REPO, NEW_REPO, commit)
-        # progress_bar_output(i, all_cnt)
 
-    print("Total replace msg cnt:%d\n"%msg_replace_cnt)
-    print("Abandon cnt:%d\n"%abandon_cnt)
+        is_in_map = commit.commit_id in COMMIT_MSG_MAP
+        in_map_cnt += 1 if is_in_map else 0
+        if is_in_map:
+            new_msg = COMMIT_MSG_MAP[commit.commit_id]
+            commit.new_message = new_msg
+            is_empty = new_msg == ""
+            in_map_abandon_cnt += 1 if is_empty else 0
+            if is_empty:
+                continue
+        else:
+            if not commit.useful:
+                not_in_map_abandon_cnt += 1
+                continue
+
+        copy_commit(REPO, NEW_REPO, commit)
+        progress_bar_output(i, all_cnt)
+    print('\n')
+    print("Total cnt:%d\n" % all_cnt)
+    print("Total in_map_cnt:%d\n" % in_map_cnt)
+    print("Total abanon_in_map cnt:%d\n" % in_map_abandon_cnt)
+    print("Total abanon_not_in_map cnt:%d\n" % not_in_map_abandon_cnt)
+    apply_cnt = all_cnt - ( in_map_abandon_cnt + not_in_map_abandon_cnt)
+    print("Total apply cnt:%d\n"%apply_cnt)
     print("\nProcess done!\n")
 
 
@@ -98,16 +101,18 @@ def collect_name_and_email(commits):
         email = c.author_email
         real_email = REPLICA_EMAIL_MAP.get(email, "")
 
-        assert real_email, "%s not matched"%email
+        assert real_email, "%s not matched" % email
 
         NAME_EMAIL_MAP[real_name] = real_email
         AUTHOR_COMMIT_CNT[real_name] = AUTHOR_COMMIT_CNT.get(real_name, 0) + 1
         AUTHOR_EMAIL_COMMIT_CNT[real_email] = AUTHOR_EMAIL_COMMIT_CNT.get(real_email, 0) + 1
 
+def save_commit_msg():
+    save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
 
 if __name__ == "__main__":
     init_func(-1)
-    COMMIT_MSG_MAP = load_commit_message_map("/home/czs/commit_backup/")
+    COMMIT_MSG_MAP = load_commit_message_map(COMMIT_FILE_DIR)
 
     if 1:
         ALL_APPLY_COMMITS[-1].is_mainline = True
@@ -117,11 +122,4 @@ if __name__ == "__main__":
         MyCommit.REPLICA_NAME_MAP = REPLICA_NAME_MAP
         simplify(ALL_APPLY_COMMITS, COMMIT_MAP)
         describe_commits(ALL_APPLY_COMMITS)
-        # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
-        # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: c.useful and not c.is_mainline)
-        # save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
-        # save_commit_msg_by_author("/home/czs/author_orphans", ALL_APPLY_COMMITS, lambda c: c.is_orphan)
-
-        # save_mainline_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
-        # save_useful_msg("/home/czs/author_msgs", ALL_APPLY_COMMITS)
-        process(lambda c: c.useful)
+        process()

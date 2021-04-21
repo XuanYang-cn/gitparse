@@ -69,5 +69,8 @@ def load_commit_message_map(dir_path):
     print("In load commit msg end.\n")
     return ret
 
-
+# def add_time_to_datetime(t, duration):
+#     from datetime import datetime, timedelta
+#     x = datetime.now() + timedelta(seconds=3)
+#     x += timedelta(seconds=18)
 

@@ -1,5 +1,5 @@
 import git
-
+import subprocess
 from commit import *
 from const import *
 from name_maps import *
@@ -20,6 +20,8 @@ AUTHOR_EMAIL_COMMIT_CNT = {}
 NAME_EMAIL_MAP = {}
 
 COMMIT_MSG_MAP = {}
+
+GFILE = None
 
 
 def init_func(max_commit_cnt=-1):
@@ -44,6 +46,27 @@ def init_func(max_commit_cnt=-1):
 
     reset_to_rev(REPO, INIT_COMMIT)
     clean_repo(REPO)
+    change_commit_date(NEW_REPO)
+    MyCommit.START_DATETIME = NEW_REPO.head.commit.authored_datetime
+    MyCommit.START_COMMIT = NEW_REPO.head.commit
+    # src_commit.authored_datetime
+    # print("OOOO:", NEW_REPO.head.commit.author_tz_offset)
+
+
+
+def change_commit_date(repo):
+    # repo.git.execute(
+    #     ['git', 'commit', '--amend  --date ', "'Tue Apr 20 01:40:36 2021 +0800'"])
+    return
+
+    wd = os.getcwd()
+    os.chdir(NEW_REPO_DIR)
+    os.system("git commit --amend --no-edit --date 'Tue Apr 20 01:10:36 2021 +0800'")
+    os.chdir(wd)
+
+# git commit --amend --no-edit --date 'Tue Apr 20 00:03:36 2021 +0800'
+# git commit --amend --no-edit --date 'Tue Apr 20 13:41:54 2021 +0800'
+
 
 
 def process():
@@ -72,16 +95,62 @@ def process():
                 continue
 
         copy_commit(REPO, NEW_REPO, commit)
+        # copy_commit3(REPO, NEW_REPO, commit)
         progress_bar_output(i, all_cnt)
+
     print('\n')
     print("Total cnt:%d\n" % all_cnt)
     print("Total in_map_cnt:%d\n" % in_map_cnt)
     print("Total abanon_in_map cnt:%d\n" % in_map_abandon_cnt)
     print("Total abanon_not_in_map cnt:%d\n" % not_in_map_abandon_cnt)
-    apply_cnt = all_cnt - ( in_map_abandon_cnt + not_in_map_abandon_cnt)
-    print("Total apply cnt:%d\n"%apply_cnt)
+    apply_cnt = all_cnt - (in_map_abandon_cnt + not_in_map_abandon_cnt)
+    print("Total apply cnt:%d\n" % apply_cnt)
     print("\nProcess done!\n")
 
+
+# All_IGNORE
+
+LAST_EXIST = False
+
+#
+# def copy_commit3(repo, new_repo, commit):
+#     reset_to_commit(repo, commit)
+#     clean_repo(repo)
+#     files = list_files_in_commit(repo, commit)
+#     # print(files)
+#
+#     target_file = "%s/internal/core/src/index/thirdparty/NGT/lib/NGT/Common.cpp" % REPO_DIR
+#     global LAST_EXIST
+#     cur_exist = os.path.exists(target_file)
+#     # if LAST_EXIST == cur_exist:
+#     #     return
+#     LAST_EXIST = cur_exist
+#     line = "1" if os.path.exists(target_file) else "0"
+#
+#     remove_all_tracked_files(new_repo, NEW_REPO_DIR, NEW_REPO_BRANCH)
+#     copy_files(files, REPO_DIR, NEW_REPO_DIR)
+#     target_file2 = "%s/internal/core/src/index/thirdparty/NGT/lib/NGT/Common.cpp" % NEW_REPO_DIR
+#     cur_exist2 = os.path.exists(target_file2)
+#     line2 = "1" if cur_exist2 else "0"
+#     GFILE.write("%s:%s,%s\n" % (commit.commit_id, line, line2))
+
+
+# def copy_commit2(repo, commit):
+#     reset_to_commit(repo, commit)
+#     clean_repo(repo)
+#     fpath = REPO_DIR + "/.gitignore"
+#     if os.path.exists(fpath):
+#         f = open(fpath, "r")
+#         lines = f.readlines()
+#         GFILE.write("%s:\n" % commit.commit_id)
+#         GFILE.writelines(lines)
+#         GFILE.write("================\n")
+#     # files = list_files_in_commit(repo, commit)
+#     # for f in files:
+#     #     if ".gitignore"
+
+
+# internal/core/src/index/thirdparty/NGT/lib/NGT
 
 def copy_commit(repo, new_repo, commit):
     reset_to_commit(repo, commit)
@@ -91,6 +160,11 @@ def copy_commit(repo, new_repo, commit):
     remove_all_tracked_files(new_repo, NEW_REPO_DIR, NEW_REPO_BRANCH)
     copy_files(files, REPO_DIR, NEW_REPO_DIR)
     apply_commit(new_repo, commit)
+    # target_file1 = "%s/internal/core/src/index/thirdparty/NGT/lib/NGT/Common.cpp" % REPO_DIR
+    # target_file2 = "%s/internal/core/src/index/thirdparty/NGT/lib/NGT/Common.cpp" % NEW_REPO_DIR
+    # line1 = "1" if os.path.exists(target_file1) else "0"
+    # line2 = "1" if os.path.exists(target_file2) else "0"
+    # GFILE.write("%s:%s,%s\n" % (commit.commit_id, line1, line2))
 
 
 def collect_name_and_email(commits):
@@ -107,13 +181,15 @@ def collect_name_and_email(commits):
         AUTHOR_COMMIT_CNT[real_name] = AUTHOR_COMMIT_CNT.get(real_name, 0) + 1
         AUTHOR_EMAIL_COMMIT_CNT[real_email] = AUTHOR_EMAIL_COMMIT_CNT.get(real_email, 0) + 1
 
+
 def save_commit_msg():
     save_commit_msg_by_author("/home/czs/author_msgs", ALL_APPLY_COMMITS, lambda c: True)
+
 
 if __name__ == "__main__":
     init_func(-1)
     COMMIT_MSG_MAP = load_commit_message_map(COMMIT_FILE_DIR)
-
+    GFILE = open("/home/czs/hahaha.txt", "w")
     if 1:
         ALL_APPLY_COMMITS[-1].is_mainline = True
         check_mainline(ALL_APPLY_COMMITS, COMMIT_MAP)

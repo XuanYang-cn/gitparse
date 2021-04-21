@@ -3,10 +3,14 @@ import shutil
 
 from const import REPO_DIR, NEW_REPO_DIR
 from excel import create_table_for_author
+from datetime import datetime, timedelta
 
 class MyCommit:
     REPLICA_NAME_MAP = {}
     NAME_EMAIL_MAP = {}
+    # START_DATETIME = datetime.now()
+    START_DATETIME = None
+    START_COMMIT = None
 
     def __init__(self, commit, order):
         self._commit = commit
@@ -179,19 +183,114 @@ def list_files_in_commit(repo, commit):
     return files
 
 
+def fixup_faiss_link(repo_dir):
+    rel_dirs = [
+        "internal/core/src/index/thirdparty/faiss",
+        "core/src/index/thirdparty/faiss",
+    ]
+    for r_dir in rel_dirs:
+        _fixup_faiss_link(repo_dir, r_dir)
+
+def _fixup_faiss_link(repo_dir, relative_dir):
+    target_dir = "%s/%s" % (repo_dir,relative_dir)
+    faiss_link_dir = "%s/faiss"%target_dir
+    if not os.path.exists(faiss_link_dir):
+        return
+    if not os.path.islink(faiss_link_dir):
+        return
+
+    wd = os.getcwd()
+    os.chdir(target_dir)
+    os.remove(faiss_link_dir)
+    os.symlink(".", 'faiss')
+    os.chdir(wd)
+
+def fixup_missing_file(repo, repo_dir):
+    fname = ".gitignore"
+    new_lines = []
+    old_lines = []
+    with open("%s/%s" % (repo_dir, fname), "r") as f:
+        old_lines.extend(f.readlines())
+        new_lines.extend([l for l in old_lines if l != 'lib/\n'])
+
+    with open("%s/%s" % (repo_dir, fname), "w") as f:
+        f.writelines(new_lines)
+
+    repo.git.add(".")
+
+    with open("%s/%s" % (repo_dir, fname), "w") as f:
+        f.writelines(old_lines)
+
+def replace_msg(commit_id, msg):
+    # mainly to remove pr number
+    replace_map = {
+        '65fd57fdceaac6391e53328b72fd0ce13c18ca4d': 'Add docker-compose yaml for distributed and standalone',
+        '2d5eed2dd96be4955e74c2677cf0326472f28cfe': 'Support segcoreinit',
+        '7d97b816876a090ec3d7a4ee3380d1840ad2e05c': 'Make query node asynchronously load and release collection',
+        'b4651f1ccae4a46e2c14ba5064e734beaee8a6d0': 'Add unit tests in dataservice',
+        '5bbe916ccae2d9597e6806ae8d652efb5423f619': 'Fix collection cannot be found when searching',
+        '5993b6cf1eab6fb47832bd18155f552ae52795c0': 'Add unittest for storage',
+    }
+    return replace_map.get(commit_id, msg)
+
+def add_singed_off(msg, author, email):
+    #Signed-off-by: yudong.cai <yudong.cai@zilliz.com>
+    prefix = "Signed-off-by:"
+    if prefix in msg:
+        return msg
+    sign_msg = " ".join([prefix, author, "<%s>"%email])
+    msg = msg + "\n\n" + sign_msg
+    return msg
+
 def apply_commit(repo, src_commit):
     author_name = src_commit.real_author_name
     author_email = src_commit.real_author_email
-    author_date_str = src_commit.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    # author_date_str = src_commit.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    d_datetime = src_commit.authored_datetime - timedelta(hours=8)
+    author_date_str = d_datetime.strftime('%Y-%m-%d %H:%M:%S %z')
 
     os.environ["GIT_AUTHOR_DATE"] = author_date_str
     os.environ["GIT_COMMITTER_DATE"] = author_date_str
     set_user_and_email(repo, author_name, author_email)
 
+    target_id = '1bbe40ef7ca3b56850142af581d94f5668815a8b'
+    if src_commit.commit_id == target_id:
+        fixup_missing_file(repo, NEW_REPO_DIR)
+
+    fixup_faiss_link(NEW_REPO_DIR)
+
+    repo.git.add(".")
+    msg = replace_msg(src_commit.commit_id, src_commit.new_message)
+    msg = msg.strip()
+    msg = add_singed_off(msg, author_name, author_email)
+    repo.index.commit(msg)
+
+def apply_commit2(repo, src_commit):
+
+    MyCommit.START_DATETIME = MyCommit.START_DATETIME + timedelta(seconds=18)
+    d_datetime = MyCommit.START_DATETIME - timedelta(hours=8)
+    author_name = src_commit.real_author_name
+    author_email = src_commit.real_author_email
+
+    # author_date_str = src_commit.authored_datetime.strftime('%Y-%m-%d %H:%M:%S')
+    # date2 = src_commit.authored_datetime
+    # timestamp = MyCommit.START_DATETIME.time
+    author_date_str = d_datetime.strftime('%Y-%m-%d %H:%M:%S %z')
+
+    os.environ["GIT_AUTHOR_DATE"] = author_date_str
+    os.environ["GIT_COMMITTER_DATE"] = author_date_str
+    set_user_and_email(repo, author_name, author_email)
+
+
+    target_id = '1bbe40ef7ca3b56850142af581d94f5668815a8b'
+    if src_commit.commit_id == target_id:
+        fixup_missing_file(repo, NEW_REPO_DIR)
+
+    fixup_faiss_link(NEW_REPO_DIR)
+
     repo.git.add(".")
     msg = src_commit.new_message
     repo.index.commit(msg)
-
 
 def checkout_branch(repo, branch, create_new=False):
     does_exist = True
@@ -255,6 +354,8 @@ def describe_commits(commits):
             print("%s:%d"%(x, y))
 
 
+dir_link_map = {}
+
 def copy_dir(src, dst):
     # src : /home/czs/xxx
     # src_name  xxx
@@ -263,7 +364,9 @@ def copy_dir(src, dst):
     target_dir = os.path.join(dst, src_name)
 
     if os.path.islink(src):
+        # if os.path.isdir(src): return
         os.symlink(src, target_dir)
+        dir_link_map[src] = target_dir
         return
 
     if not os.path.exists(target_dir):
@@ -372,9 +475,13 @@ def simplify(commits, commit_map):
         if rp:
             rp.judge_by_child(c)
 
+link_file_map = set()
 
 def copy_files(files, srcDir, dstDir):
     for file in files:
+        if os.path.islink(file):
+            link_file_map.add(file)
+        # continue
         file_path = os.path.join(srcDir, file)
         if os.path.isfile(file_path):
             shutil.copy(file_path, dstDir, follow_symlinks=True)
@@ -417,3 +524,7 @@ def save_mainline_msg(target_dir, commits):
 def save_useful_msg(target_dir, commits):
     checkFunc = lambda c: c.useful
     save_commit_msg_by_author(target_dir, commits, checkFunc)
+
+
+if __name__ == '__main__':
+    fixup_faiss_link('/home/czs/dmilvus2')

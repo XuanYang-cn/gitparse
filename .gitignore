@@ -15,6 +15,7 @@
 .coverage
 *.pyc
 *.log
+.env
 
 .DS_Store
 *.swp

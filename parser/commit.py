@@ -401,6 +401,7 @@ def collect_commits(repo, branch, count=-1):
     else:
         commits = commits[:]
 
+    print(commits)
     for i, c in enumerate(commits):
         my_c = MyCommit(c, i)
         my_commits.append(my_c)

@@ -1,6 +1,6 @@
-REPO_DIR = "/home/czs/dmilvus"
+REPO_DIR = "/home/yangxuan/Github/pymilvus-orm"
 REPO_BACKUP_BRANCH = "r0.3-test"
-REPO_BRANCH = "ready_tmp"
+REPO_BRANCH = "yyy"
 TMP_BRANCH = "tmp"
 
 NEW_REPO_DIR = "/home/czs/dmilvus2"

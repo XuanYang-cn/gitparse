@@ -1,9 +1,10 @@
 import os
 import shutil
+from datetime import timedelta
 
-from const import REPO_DIR, NEW_REPO_DIR
-from excel import create_table_for_author
-from datetime import datetime, timedelta
+from .const import REPO_DIR, NEW_REPO_DIR
+from .excel import create_table_for_author
+
 
 class MyCommit:
     REPLICA_NAME_MAP = {}
@@ -173,7 +174,7 @@ def del_branch_local(repo, branch):
     try:
         repo.git.execute(
             ['git', 'branch', '--d', branch])
-    except:
+    except Exception:
         pass
 
 
@@ -191,9 +192,10 @@ def fixup_faiss_link(repo_dir):
     for r_dir in rel_dirs:
         _fixup_faiss_link(repo_dir, r_dir)
 
+
 def _fixup_faiss_link(repo_dir, relative_dir):
-    target_dir = "%s/%s" % (repo_dir,relative_dir)
-    faiss_link_dir = "%s/faiss"%target_dir
+    target_dir = "%s/%s" % (repo_dir, relative_dir)
+    faiss_link_dir = "%s/faiss" % target_dir
     if not os.path.exists(faiss_link_dir):
         return
     if not os.path.islink(faiss_link_dir):
@@ -205,13 +207,14 @@ def _fixup_faiss_link(repo_dir, relative_dir):
     os.symlink(".", 'faiss')
     os.chdir(wd)
 
+
 def fixup_missing_file(repo, repo_dir):
     fname = ".gitignore"
     new_lines = []
     old_lines = []
     with open("%s/%s" % (repo_dir, fname), "r") as f:
         old_lines.extend(f.readlines())
-        new_lines.extend([l for l in old_lines if l != 'lib/\n'])
+        new_lines.extend([line for line in old_lines if line != 'lib/\n'])
 
     with open("%s/%s" % (repo_dir, fname), "w") as f:
         f.writelines(new_lines)
@@ -220,6 +223,7 @@ def fixup_missing_file(repo, repo_dir):
 
     with open("%s/%s" % (repo_dir, fname), "w") as f:
         f.writelines(old_lines)
+
 
 def replace_msg(commit_id, msg):
     # mainly to remove pr number
@@ -233,14 +237,16 @@ def replace_msg(commit_id, msg):
     }
     return replace_map.get(commit_id, msg)
 
+
 def add_singed_off(msg, author, email):
-    #Signed-off-by: yudong.cai <yudong.cai@zilliz.com>
+    # Signed-off-by: yudong.cai <yudong.cai@zilliz.com>
     prefix = "Signed-off-by:"
     if prefix in msg:
         return msg
-    sign_msg = " ".join([prefix, author, "<%s>"%email])
+    sign_msg = " ".join([prefix, author, "<%s>" % email])
     msg = msg + "\n\n" + sign_msg
     return msg
+
 
 def apply_commit(repo, src_commit):
     author_name = src_commit.real_author_name
@@ -265,6 +271,7 @@ def apply_commit(repo, src_commit):
     msg = add_singed_off(msg, author_name, author_email)
     repo.index.commit(msg)
 
+
 def apply_commit2(repo, src_commit):
 
     MyCommit.START_DATETIME = MyCommit.START_DATETIME + timedelta(seconds=18)
@@ -281,7 +288,6 @@ def apply_commit2(repo, src_commit):
     os.environ["GIT_COMMITTER_DATE"] = author_date_str
     set_user_and_email(repo, author_name, author_email)
 
-
     target_id = '1bbe40ef7ca3b56850142af581d94f5668815a8b'
     if src_commit.commit_id == target_id:
         fixup_missing_file(repo, NEW_REPO_DIR)
@@ -292,11 +298,12 @@ def apply_commit2(repo, src_commit):
     msg = src_commit.new_message
     repo.index.commit(msg)
 
+
 def checkout_branch(repo, branch, create_new=False):
     does_exist = True
     try:
         repo.git.checkout(branch)
-    except:
+    except Exception:
         does_exist = False
 
     if not does_exist:
@@ -304,7 +311,6 @@ def checkout_branch(repo, branch, create_new=False):
             raise Exception('{branch} not existed'.format(branch=repr(branch)))
         else:
             repo.git.checkout('-b', branch)
-
 
 
 def merge_branch(repo, branch):
@@ -347,14 +353,15 @@ def describe_commits(commits):
     if 0:
         print("Useful:")
         for x, y in useful_map.items():
-            print("%s:%d"%(x, y))
+            print("%s:%d" % (x, y))
 
         print("Not Useful")
         for x, y in notuseful_map.items():
-            print("%s:%d"%(x, y))
+            print("%s:%d" % (x, y))
 
 
 dir_link_map = {}
+
 
 def copy_dir(src, dst):
     # src : /home/czs/xxx
@@ -475,7 +482,9 @@ def simplify(commits, commit_map):
         if rp:
             rp.judge_by_child(c)
 
+
 link_file_map = set()
+
 
 def copy_files(files, srcDir, dstDir):
     for file in files:
@@ -517,13 +526,13 @@ def save_commit_msg_by_author(target_dir, commits, checkFunc):
         fname = "%s/%s" % (target_dir, repr(author))
         create_table_for_author(fname, content, widths)
 
+
 def save_mainline_msg(target_dir, commits):
-    checkFunc = lambda c: c.is_mainline
-    save_commit_msg_by_author(target_dir, commits, checkFunc)
+    save_commit_msg_by_author(target_dir, commits, lambda c: c.is_mainline)
+
 
 def save_useful_msg(target_dir, commits):
-    checkFunc = lambda c: c.useful
-    save_commit_msg_by_author(target_dir, commits, checkFunc)
+    save_commit_msg_by_author(target_dir, commits, lambda c: c.useful)
 
 
 if __name__ == '__main__':

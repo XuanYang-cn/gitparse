@@ -2,7 +2,8 @@ import sys
 import glob
 import os
 
-from excel import read_excel_file
+from .excel import read_excel_file
+
 
 def get_string_width(multi_string):
     lines = multi_string.split("\n")
@@ -34,7 +35,7 @@ def load_commit_message_map(dir_path):
     cnt_map = {}
 
     suffix = ".xlsx"
-    all_paths = set(glob.glob("%s/*%s"%(dir_path, suffix)))
+    all_paths = set(glob.glob("%s/*%s" % (dir_path, suffix)))
     total_cnt = 0
     for f in all_paths:
         df = read_excel_file(f)
@@ -61,7 +62,7 @@ def load_commit_message_map(dir_path):
     print("In load commit msg start:\n")
     print("==================\n")
     for name, cnt in cnt_map.items():
-        print("\t%s:%d\n"%(name, cnt))
+        print("\t%s:%d\n" % (name, cnt))
     print("total cnt:", total_cnt)
     print("keep1 cnt:", sum(cnt_map.values()))
 
@@ -73,4 +74,3 @@ def load_commit_message_map(dir_path):
 #     from datetime import datetime, timedelta
 #     x = datetime.now() + timedelta(seconds=3)
 #     x += timedelta(seconds=18)
-

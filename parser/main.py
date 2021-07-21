@@ -1,13 +1,46 @@
 import git
-import subprocess
-from commit import *
-from const import *
-from name_maps import *
-from util import *
+import os
+
+from .const import (
+    REPO_BACKUP_BRANCH,
+    REPO_BRANCH,
+    TMP_BRANCH,
+    NEW_REPO_DIR,
+    NEW_REPO_BRANCH,
+    INIT_COMMIT,
+    COMMIT_FILE_DIR,
+    REPO_DIR,
+)
+
+from .name_maps import REPLICA_NAME_MAP, REPLICA_EMAIL_MAP
+
+from .commit import (
+    del_branch_local,
+    checkout_branch,
+    clean_repo,
+    collect_commits,
+    reset_to_rev,
+    MyCommit,
+    reset_to_commit,
+    list_files_in_commit,
+    copy_files,
+    apply_commit,
+    remove_all_tracked_files,
+    save_commit_msg_by_author,
+    check_mainline,
+    simplify,
+    describe_commits,
+)
+
+from .util import (
+    progress_bar_output,
+    load_commit_message_map,
+)
+
 
 REPO = git.Repo(REPO_DIR)
 NEW_REPO = git.Repo(NEW_REPO_DIR)
-# BACKUP_REPO = git.Repo(REPO_BACKUP_BRANCH)
+BACKUP_REPO = git.Repo(REPO_BACKUP_BRANCH)
 
 COMMIT_MAP = {}
 ALL_APPLY_COMMITS = []
@@ -53,9 +86,8 @@ def init_func(max_commit_cnt=-1):
     # print("OOOO:", NEW_REPO.head.commit.author_tz_offset)
 
 
-
 def change_commit_date(repo):
-    # repo.git.execute(
+    #  repo.git.execute(
     #     ['git', 'commit', '--amend  --date ', "'Tue Apr 20 01:40:36 2021 +0800'"])
     return
 
@@ -66,7 +98,6 @@ def change_commit_date(repo):
 
 # git commit --amend --no-edit --date 'Tue Apr 20 00:03:36 2021 +0800'
 # git commit --amend --no-edit --date 'Tue Apr 20 13:41:54 2021 +0800'
-
 
 
 def process():

@@ -2,6 +2,8 @@ import git
 import csv
 import time
 import re
+import os
+from datetime import datetime
 
 
 commit_summary = """
@@ -35,6 +37,7 @@ class BaseRepo:
 
     def __init__(self, path: str, new_branch="new_branch"):
         self.repo = git.Repo(path)
+        self.path = self.repo.working_tree_dir
         try:
             self.repo.git.checkout("upstream/master")
             self.repo.git.execute(['git', 'branch', '-D', new_branch])
@@ -62,9 +65,42 @@ class BaseRepo:
 
         return res
 
+    def commit(self,
+               files: str, commit_message: str,
+               author: str, author_email: str, authored_date: int,
+               committer: str, committer_email: str, committed_date: int):
+
+        os.mkdir(os.path.join(self.path, "orm"))
+        self.repo.git.add(os.path.join(self.path, "orm"))
+
+        self.repo.index.commit(
+            commit_message,
+            author=git.Actor(author, author_email),
+            committer=git.Actor(committer, committer_email),
+            author_date=str(datetime.fromtimestamp(authored_date)),
+            commit_date=str(datetime.fromtimestamp(committed_date)),
+        )
+
 
 def test__init_commits(repo: BaseRepo):
     print(repo)
+
+
+def test_commit(repo: BaseRepo):
+    kw = {
+        "files": "",
+        "author": "zhenshan.cao",
+        "author_email": "zhenshan.cao@zilliz.com",
+        "authored_date": 1618372076,
+        "committer": "GitHub",
+        "committer_email": "noreply@github.com",
+        "committed_date": 1618372076,
+        "commit_message": "Establish the initial directory structure and copy the document files",
+    }
+
+    #  paths = ["pymilvus_orm", "tests", "docs"]
+    repo.commit(**kw)
+    pass
 
 
 class TargetRepo:
@@ -78,7 +114,6 @@ class TargetRepo:
         self.toreplace = {"Wang Xiangyu": "Xiangyu Wang"}
 
     def init_commits(self, branch: str, write_csv=False, paths=None):
-        #  time.asctime(time.localtime(c.authored_date)
 
         for i, c in enumerate(self.repo.iter_commits(branch, paths)):
             if c.author.name not in self._authors:
@@ -177,7 +212,8 @@ def test_BaseRepo():
     PYMILVUS_REPO = "/home/yangxuan/Github/pymilvus"
     pymilvus = BaseRepo(PYMILVUS_REPO)
 
-    test__init_commits(pymilvus)
+    #  test__init_commits(pymilvus)
+    test_commit(pymilvus)
 
 
 if __name__ == "__main__":

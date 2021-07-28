@@ -7,6 +7,7 @@ import re
 commit_summary = """
 ---------------------------
 Number ({}):
+ - HexSha: {},
  - Author: {},
  - Author email: {}
  - Authored date: {},
@@ -16,6 +17,54 @@ Number ({}):
  - Message summary: {}
  - Message: {}
 """
+
+commit_summary_brief = """
+---------------------------
+Number ({}):
+ - HexSha: {},
+ - Author: {},
+ - Authored date: {},
+ - Message summary: {}
+"""
+
+# PyMilvus commit at 2021-04-13
+TARGET_COMMIT_ID = "56ad18acc259221b8e965c380261730114777ba2"
+
+
+class BaseRepo:
+
+    def __init__(self, path: str, new_branch="new_branch"):
+        self.repo = git.Repo(path)
+        try:
+            self.repo.git.checkout("upstream/master")
+            self.repo.git.execute(['git', 'branch', '-D', new_branch])
+        except Exception:
+            pass
+        finally:
+            self.repo.git.checkout(TARGET_COMMIT_ID, '-b', new_branch)
+        self.__init_commits(new_branch)
+
+    def __init_commits(self, branch: str):
+        self.commits = [[c.hexsha,
+                         c.author.name,
+                         c.authored_date,
+                         c.summary,
+                         ] for c in self.repo.iter_commits(branch)]
+        self.commits.reverse()
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        res = ""
+        for i, c in enumerate(self.commits, 1):
+            res += commit_summary_brief.format(i, *c)
+
+        return res
+
+
+def test__init_commits(repo: BaseRepo):
+    print(repo)
 
 
 class TargetRepo:
@@ -39,7 +88,8 @@ class TargetRepo:
                     signed_off_email = self.get_email_from_signed_off(c.message)
                     self._authors[c.author.name] = signed_off_email if signed_off_email else c.author.email
 
-        self.commits = [[c.author.name,
+        self.commits = [[c.hexsha,
+                         c.author.name,
                          self._authors[c.author.name],
                          c.authored_date,
                          c.committer.name,
@@ -110,12 +160,9 @@ def test_commit_message(repo: TargetRepo, branch, paths=None, test=False):
         print(repo)
 
 
-if __name__ == "__main__":
-    ORMREPO = "/home/yangxuan/Github/pymilvus-orm"
-    pymilvus_orm = TargetRepo(ORMREPO)
-
-    REPO = "/home/yangxuan/Github/pymilvus"
-    pymilvus = TargetRepo(REPO)
+def test_TargetRepo():
+    ORM_REPO = "/home/yangxuan/Github/pymilvus-orm"
+    pymilvus_orm = TargetRepo(ORM_REPO)
 
     #  pymilvus_orm.init_commits("main", True, ["pymilvus_orm", "tests", "docs"])
     #  print(pymilvus_orm)
@@ -123,5 +170,15 @@ if __name__ == "__main__":
     #  print(pymilvus_orm)
 
     test_authors(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])
-    test_authors(pymilvus, "upstream/master")
     test_commit_message(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])
+
+
+def test_BaseRepo():
+    PYMILVUS_REPO = "/home/yangxuan/Github/pymilvus"
+    pymilvus = BaseRepo(PYMILVUS_REPO)
+
+    test__init_commits(pymilvus)
+
+
+if __name__ == "__main__":
+    test_BaseRepo()

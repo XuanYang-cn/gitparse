@@ -1,6 +1,7 @@
 import git
 import csv
 import time
+import re
 
 
 commit_summary = """
@@ -25,6 +26,7 @@ class TargetRepo:
         self._authors = {}
         self.author2email = {}
         self._commits = []
+        self.toreplace = {"Wang Xiangyu": "Xiangyu Wang"}
 
     def init_commits(self, branch: str, write_csv=False, paths=None):
         #  time.asctime(time.localtime(c.authored_date)
@@ -41,14 +43,20 @@ class TargetRepo:
         self.commits.reverse()
 
         for c in self.repo.iter_commits(branch, paths):
-            emails = [] if not self._authors.get(c.author.name, None) else self._authors.get(c.author.name)
-            emails.append(c.author.email)
-            self._authors[c.author.name] = list(set(emails))
+            if c.author.name not in self._authors:
+                if "zilliz.com" in c.author.email:
+                    self._authors[c.author.name] = c.author.email
+                else:
+                    self._authors[c.author.name] = self.get_email_from_signed_off(c.message)
 
         if write_csv:
             with open(self.csvfile, 'w', newline='') as csvfile:
                 commitwriter = csv.writer(csvfile)
                 commitwriter.writerows(self.commits)
+
+    def get_email_from_signed_off(self, message: str) -> str:
+        pattern = re.compile(r"\<.*\>")
+        return pattern.findall(message)[-1][1:][:-1]
 
     @property
     def authors(self):
@@ -76,9 +84,10 @@ class TargetRepo:
 
 def test_authors(repo: TargetRepo):
     print("== Test Authors ==")
-    repo.init_commits("main", False)
+    repo.init_commits("main", False, ["pymilvus_orm", "tests", "docs"])
 
-    print(repo.authors)
+    from pprint import pprint
+    pprint(repo.authors)
 
 
 if __name__ == "__main__":

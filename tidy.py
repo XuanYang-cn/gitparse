@@ -30,33 +30,44 @@ class TargetRepo:
 
     def init_commits(self, branch: str, write_csv=False, paths=None):
         #  time.asctime(time.localtime(c.authored_date)
-        self.commits = [(c.author.name,
-                         c.author.email,
-                         c.authored_date,
-                         c.committer.name,
-                         c.committer.email,
-                         c.committed_date,
-                         c.summary,
-                         c.message
-                         ) for c in self.repo.iter_commits(branch, paths)]
 
-        self.commits.reverse()
-
-        for c in self.repo.iter_commits(branch, paths):
+        for i, c in enumerate(self.repo.iter_commits(branch, paths)):
             if c.author.name not in self._authors:
                 if "zilliz.com" in c.author.email:
                     self._authors[c.author.name] = c.author.email
                 else:
-                    self._authors[c.author.name] = self.get_email_from_signed_off(c.message)
+                    signed_off_email = self.get_email_from_signed_off(c.message)
+                    self._authors[c.author.name] = signed_off_email if signed_off_email else c.author.email
 
+        self.commits = [[c.author.name,
+                         self._authors[c.author.name],
+                         c.authored_date,
+                         c.committer.name,
+                         c.committer.email,
+                         c.committed_date,
+                         self.remove_pr_number_in_message(c.summary),
+                         self.remove_pr_number_in_message(c.message)
+                         ] for c in self.repo.iter_commits(branch, paths)]
+
+        self.commits.reverse()
         if write_csv:
             with open(self.csvfile, 'w', newline='') as csvfile:
                 commitwriter = csv.writer(csvfile)
                 commitwriter.writerows(self.commits)
 
     def get_email_from_signed_off(self, message: str) -> str:
-        pattern = re.compile(r"\<.*\>")
-        return pattern.findall(message)[-1][1:][:-1]
+        # pattern for <aaa@bbb.com>
+        pattern = re.compile(r"\<(.*)\>")
+        b = pattern.search(message)
+        return b.group(1) if b else ""
+
+    def remove_pr_number_in_message(self, message: str) -> str:
+        # pattern for (#123)
+        pattern = re.compile(r"\(#\d+\)")
+        b = pattern.search(message)
+        if b:
+            return message.replace(b.group(), "")
+        return message
 
     @property
     def authors(self):
@@ -82,21 +93,35 @@ class TargetRepo:
         return res
 
 
-def test_authors(repo: TargetRepo):
+def test_authors(repo: TargetRepo, branch, paths=None, test=False):
     print("== Test Authors ==")
-    repo.init_commits("main", False, ["pymilvus_orm", "tests", "docs"])
+    repo.init_commits(branch, False, paths)
 
-    from pprint import pprint
-    pprint(repo.authors)
+    if test:
+        from pprint import pprint
+        pprint(repo.authors)
+
+
+def test_commit_message(repo: TargetRepo, branch, paths=None, test=False):
+    print("== Test Commit Messages ==")
+    repo.init_commits(branch, False, paths)
+
+    if test:
+        print(repo)
 
 
 if __name__ == "__main__":
-    REPO = "/home/yangxuan/Github/pymilvus-orm"
-    pymilvus_orm = TargetRepo(REPO)
+    ORMREPO = "/home/yangxuan/Github/pymilvus-orm"
+    pymilvus_orm = TargetRepo(ORMREPO)
+
+    REPO = "/home/yangxuan/Github/pymilvus"
+    pymilvus = TargetRepo(REPO)
 
     #  pymilvus_orm.init_commits("main", True, ["pymilvus_orm", "tests", "docs"])
     #  print(pymilvus_orm)
     #  pymilvus_orm.read_commits()
     #  print(pymilvus_orm)
 
-    test_authors(pymilvus_orm)
+    test_authors(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])
+    test_authors(pymilvus, "upstream/master")
+    test_commit_message(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])

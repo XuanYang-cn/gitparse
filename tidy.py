@@ -66,11 +66,10 @@ class BaseRepo:
         return res
 
     def commit(self,
-               files: str, commit_message: str,
                author: str, author_email: str, authored_date: int,
-               committer: str, committer_email: str, committed_date: int):
+               committer: str, committer_email: str, committed_date: int,
+               summary: str, commit_message: str):
 
-        os.mkdir(os.path.join(self.path, "orm"))
         self.repo.git.add(os.path.join(self.path, "orm"))
 
         self.repo.index.commit(
@@ -88,7 +87,6 @@ def test__init_commits(repo: BaseRepo):
 
 def test_commit(repo: BaseRepo):
     kw = {
-        "files": "",
         "author": "zhenshan.cao",
         "author_email": "zhenshan.cao@zilliz.com",
         "authored_date": 1618372076,
@@ -230,52 +228,57 @@ def excute():
     pymilvus = BaseRepo(PYMILVUS_REPO)
 
     pymilvus_orm.init_commits("upstream/main", True, ["pymilvus_orm", "tests", "docs"])
-
-    srcs = (
-        os.path.join(pymilvus_orm.path, "pymilvus_orm"),
-        os.path.join(pymilvus_orm.path, "milvus_orm"),
-        os.path.join(pymilvus_orm.path, "tests"),
-        os.path.join(pymilvus_orm.path, "docs"),
-    )
+    base_dir = os.path.join(pymilvus.path, "orm")
+    if not os.path.isdir(base_dir):
+        os.mkdir(base_dir)
 
     target_num = len(pymilvus_orm.commits)
-    for i, commit in enumerate(pymilvus_orm.commits):
-        print(commit_summary.format(i, *commit))
-        s = "#" * int(i / target_num * 100)
-        print(f"{s:100} {(i / target_num) * 100:.2f}%")
+    for i, commit in enumerate(pymilvus_orm.commits, 1):
+        num = int(i / target_num * 100)
+        s = "#" * num
+        o = "-" * (100 - num)
+        print(f"{s}{o} |{(i / target_num) * 100:.2f}%")
 
         pymilvus_orm.reset2rev(commit[0])
 
-        src_files = []
+        pymilvus_orm.repo.git.execute(['git', "clean", "-fd"])
+        copy(pymilvus_orm.path, os.path.join(pymilvus.path, "orm"))
 
-        def iter_files(src):
-            for root, dirs, files in os.walk(src):
-                src_files.extend([os.path.join(root, f).replace("-", "/") for f in files])
-
-        list(map(iter_files, srcs))
-
-        def copy(source):
-            shutil.copy(source, source.replace("-", "/"))
-
-        list(map(copy, src_files))
+        pymilvus.commit(*commit[1:])
 
 
-def test_copy():
-    src_dir = "/home/yangxuan/Github/pymilvus-orm"
-    srcs = (
-        os.path.join(src_dir, "pymilvus_orm"),
-        os.path.join(src_dir, "tests"),
-        os.path.join(src_dir, "docs"),
-    )
+def copy(src, dst):
+    #  print(f"src: {src}\ndst: {dst}")
+    files = ["pymilvus_orm", "milvus_orm", "tests", "docs"]
+    srcs = (os.path.join(src, f) for f in files)
+    #  print(f"Removing files in {dst} {os.listdir(dst)}")
+    [shutil.rmtree(os.path.join(dst, d)) for d in os.listdir(dst)]
 
     src_files = []
 
     def iter_files(src):
         for root, dirs, files in os.walk(src):
-            src_files.extend([os.path.join(root, f).replace("-", "/") for f in files])
+            root_d = root.replace("-", "/")
+            if not os.path.isdir(root_d):
+                #  print(f"Making directory {root_d}")
+                os.mkdir(root_d)
+
+            src_files.extend([os.path.join(root, f) for f in files])
+            for d in dirs:
+                current_d = os.path.join(root_d, d)
+                if not os.path.isdir(current_d):
+                    #  print(f"Making directory {current_d}")
+                    os.mkdir(current_d)
 
     list(map(iter_files, srcs))
-    print(src_files)
+
+    def copy(source):
+        pass
+        #  print(f"Copy from {source} to {source.replace('-', '/')}")
+        shutil.copy(source, source.replace("-", "/"))
+
+    #  print(f"Copying files total: {len(src_files)}")
+    list(map(copy, src_files))
 
 
 if __name__ == "__main__":

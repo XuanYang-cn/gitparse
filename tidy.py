@@ -95,7 +95,6 @@ class TargetRepo:
         self._commits = []
 
     def init_commits(self, branch: str, write_csv=False, paths=None):
-
         for i, c in enumerate(self.repo.iter_commits(branch, paths)):
             if c.author.name not in self._authors:
                 if "zilliz.com" in c.author.email:
@@ -173,12 +172,14 @@ def excute():
     pymilvus = BaseRepo(PYMILVUS_REPO)
 
     pymilvus_orm.init_commits("upstream/main", True, ["pymilvus_orm", "tests", "docs"])
+
     base_dir = os.path.join(pymilvus.path, "orm")
     if not os.path.isdir(base_dir):
         os.mkdir(base_dir)
 
     target_num = len(pymilvus_orm.commits)
     for i, commit in enumerate(pymilvus_orm.commits, 1):
+        # Progress printing
         num = int(i / target_num * 100)
         s = "#" * num
         o = "-" * (100 - num)

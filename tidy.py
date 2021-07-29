@@ -80,25 +80,8 @@ class BaseRepo:
             commit_date=str(datetime.fromtimestamp(committed_date)),
         )
 
-
-def test__init_commits(repo: BaseRepo):
-    print(repo)
-
-
-def test_commit(repo: BaseRepo):
-    kw = {
-        "author": "zhenshan.cao",
-        "author_email": "zhenshan.cao@zilliz.com",
-        "authored_date": 1618372076,
-        "committer": "GitHub",
-        "committer_email": "noreply@github.com",
-        "committed_date": 1618372076,
-        "commit_message": "Establish the initial directory structure and copy the document files",
-    }
-
-    #  paths = ["pymilvus_orm", "tests", "docs"]
-    repo.commit(**kw)
-    pass
+    def rebase(self):
+        self.repo.git.execute(['git', 'rebase', '--committer-date-is-author-date', 'upstream/master'])
 
 
 class TargetRepo:
@@ -182,44 +165,6 @@ class TargetRepo:
         return res
 
 
-def test_authors(repo: TargetRepo, branch, paths=None, test=False):
-    print("== Test Authors ==")
-    repo.init_commits(branch, False, paths)
-
-    if test:
-        from pprint import pprint
-        pprint(repo.authors)
-
-
-def test_commit_message(repo: TargetRepo, branch, paths=None, test=False):
-    print("== Test Commit Messages ==")
-    repo.init_commits(branch, False, paths)
-
-    if test:
-        print(repo)
-
-
-def test_TargetRepo():
-    ORM_REPO = "/home/yangxuan/Github/pymilvus-orm"
-    pymilvus_orm = TargetRepo(ORM_REPO)
-
-    #  pymilvus_orm.init_commits("main", True, ["pymilvus_orm", "tests", "docs"])
-    #  print(pymilvus_orm)
-    #  pymilvus_orm.read_commits()
-    #  print(pymilvus_orm)
-
-    test_authors(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])
-    test_commit_message(pymilvus_orm, "main", ["pymilvus_orm", "tests", "docs"])
-
-
-def test_BaseRepo():
-    PYMILVUS_REPO = "/home/yangxuan/Github/pymilvus"
-    pymilvus = BaseRepo(PYMILVUS_REPO)
-
-    #  test__init_commits(pymilvus)
-    test_commit(pymilvus)
-
-
 def excute():
     ORM_REPO = "/home/yangxuan/Github/pymilvus-orm"
     pymilvus_orm = TargetRepo(ORM_REPO)
@@ -245,6 +190,9 @@ def excute():
         copy(pymilvus_orm.path, os.path.join(pymilvus.path, "orm"))
 
         pymilvus.commit(*commit[1:])
+
+    print("Rebasing")
+    pymilvus.rebase()
 
 
 def copy(src, dst):
@@ -272,13 +220,13 @@ def copy(src, dst):
 
     list(map(iter_files, srcs))
 
-    def copy(source):
+    def _copy(source):
         pass
         #  print(f"Copy from {source} to {source.replace('-', '/')}")
         shutil.copy(source, source.replace("-", "/"))
 
     #  print(f"Copying files total: {len(src_files)}")
-    list(map(copy, src_files))
+    list(map(_copy, src_files))
 
 
 if __name__ == "__main__":

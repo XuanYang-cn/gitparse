@@ -202,32 +202,6 @@ def copy(src, dst):
 
     [shutil.copytree(os.path.join(src, s), os.path.join(dst, s)) for s in files if os.path.isdir(os.path.join(src, s))]
 
-    #  src_files = []
-    #
-    #  def iter_files(src):
-    #      for root, dirs, files in os.walk(src):
-    #          root_d = root.replace("-", "/")
-    #          if not os.path.isdir(root_d):
-    #              #  print(f"Making directory {root_d}")
-    #              os.mkdir(root_d)
-    #
-    #          src_files.extend([os.path.join(root, f) for f in files])
-    #          for d in dirs:
-    #              current_d = os.path.join(root_d, d)
-    #              if not os.path.isdir(current_d):
-    #                  #  print(f"Making directory {current_d}")
-    #                  os.mkdir(current_d)
-    #
-    #  list(map(iter_files, srcs))
-    #
-    #  def _copy(source):
-    #      pass
-    #      #  print(f"Copy from {source} to {source.replace('-', '/')}")
-    #      shutil.copy(source, source.replace("-", "/"))
-    #
-    #  #  print(f"Copying files total: {len(src_files)}")
-    #  list(map(_copy, src_files))
-
 
 if __name__ == "__main__":
     excute()

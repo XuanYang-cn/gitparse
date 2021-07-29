@@ -1,8 +1,8 @@
 import git
 import csv
-import time
 import re
 import os
+import shutil
 from datetime import datetime
 
 
@@ -107,11 +107,11 @@ class TargetRepo:
     def __init__(self, path: str, csvfile=None):
         self.csvfile = 'eggs.csv' if not csvfile and not isinstance(csvfile, str) else csvfile
         self.repo = git.Repo(path)
+        self.path = self.repo.working_tree_dir
         self.commits = []
         self._authors = {}
         self.author2email = {}
         self._commits = []
-        self.toreplace = {"Wang Xiangyu": "Xiangyu Wang"}
 
     def init_commits(self, branch: str, write_csv=False, paths=None):
 
@@ -153,6 +153,12 @@ class TargetRepo:
         if b:
             return message.replace(b.group(), "")
         return message
+
+    def reset2rev(self, rev):
+        self.repo.git.execute(['git', 'reset', '--hard', rev])
+
+    def recover(self, rev="upstream/main"):
+        self.repo.git.execute(['git', 'reset', '--hard', rev])
 
     @property
     def authors(self):
@@ -216,5 +222,61 @@ def test_BaseRepo():
     test_commit(pymilvus)
 
 
+def excute():
+    ORM_REPO = "/home/yangxuan/Github/pymilvus-orm"
+    pymilvus_orm = TargetRepo(ORM_REPO)
+
+    PYMILVUS_REPO = "/home/yangxuan/Github/pymilvus"
+    pymilvus = BaseRepo(PYMILVUS_REPO)
+
+    pymilvus_orm.init_commits("upstream/main", True, ["pymilvus_orm", "tests", "docs"])
+
+    srcs = (
+        os.path.join(pymilvus_orm.path, "pymilvus_orm"),
+        os.path.join(pymilvus_orm.path, "milvus_orm"),
+        os.path.join(pymilvus_orm.path, "tests"),
+        os.path.join(pymilvus_orm.path, "docs"),
+    )
+
+    target_num = len(pymilvus_orm.commits)
+    for i, commit in enumerate(pymilvus_orm.commits):
+        print(commit_summary.format(i, *commit))
+        s = "#" * int(i / target_num * 100)
+        print(f"{s:100} {(i / target_num) * 100:.2f}%")
+
+        pymilvus_orm.reset2rev(commit[0])
+
+        src_files = []
+
+        def iter_files(src):
+            for root, dirs, files in os.walk(src):
+                src_files.extend([os.path.join(root, f).replace("-", "/") for f in files])
+
+        list(map(iter_files, srcs))
+
+        def copy(source):
+            shutil.copy(source, source.replace("-", "/"))
+
+        list(map(copy, src_files))
+
+
+def test_copy():
+    src_dir = "/home/yangxuan/Github/pymilvus-orm"
+    srcs = (
+        os.path.join(src_dir, "pymilvus_orm"),
+        os.path.join(src_dir, "tests"),
+        os.path.join(src_dir, "docs"),
+    )
+
+    src_files = []
+
+    def iter_files(src):
+        for root, dirs, files in os.walk(src):
+            src_files.extend([os.path.join(root, f).replace("-", "/") for f in files])
+
+    list(map(iter_files, srcs))
+    print(src_files)
+
+
 if __name__ == "__main__":
-    test_BaseRepo()
+    excute()
